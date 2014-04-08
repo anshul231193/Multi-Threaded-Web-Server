@@ -248,8 +248,7 @@ strcpy(PageContent,"<html><head><title>SERVER</title></head><body BGCOLOR=\"#000
 			len_sock = sizeof(serv_store);
 			acc = accept(sockfd,(struct sockaddr *)&serv_store,&len_sock);
 		
-			sprintf(HttpHeader, HeaderTemplate, GMTNow, strlen(PageContent));
-
+			
 			if (acc == -1) 
 			{
 				perror("ERROR : accept");
@@ -257,7 +256,7 @@ strcpy(PageContent,"<html><head><title>SERVER</title></head><body BGCOLOR=\"#000
 			}
 
 			recv(acc, ClntRequest, sizeof(ClntRequest), 0);
-			printf("%s\n",HttpHeader);
+			//printf("%s\n",HttpHeader);
 			printf("%s\n",ClntRequest);
 			//extracting the html request from client's request
 			char ctr[100];
@@ -301,7 +300,10 @@ strcpy(PageContent,"<html><head><title>SERVER</title></head><body BGCOLOR=\"#000
 					{
 						break;
 					}
-					
+					if(ch=='\n' || ch=='\t')
+					{
+						continue;
+					}
 					f1[i]=ch;
 					i++;
 				}
@@ -323,13 +325,14 @@ strcpy(PageContent,"<html><head><title>SERVER</title></head><body BGCOLOR=\"#000
 					}
 				}
 				PageContent[k]='\0';
-				printf("%s\n",PageContent);
 				fclose(fp1);
 				//sleep(2);
 			}	
-			
 			inet_ntop(serv_store.ss_family,get_in_addr((struct sockaddr *)&serv_store),s, sizeof s);
 			printf("server: got connection from %s\n", s);
+
+			sprintf(HttpHeader, HeaderTemplate, GMTNow, strlen(PageContent));
+			printf("\n%s\n",HttpHeader);
 			//Log File
 			time_t now;	// getting the time the job has been assigned to the serving thread
 		        time(&now);

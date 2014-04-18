@@ -15,8 +15,9 @@
 #include <fcntl.h>
 #include <sys/time.h>
 
-#define BACKLOG 10
+//#define BACKLOG 10
 #define STDIN 0
+
 
 char PageContent[150000];
 int bl_counter=0;
@@ -38,6 +39,8 @@ char buffer[25],buf[100];
 struct tm* tm_info;
 struct timeval tv;
 fd_set readfds;
+
+int BACKLOG=10;
 
 
 FILE *slog;
@@ -106,25 +109,27 @@ void *get_in_addr(struct sockaddr *sa)
 
 void *sock_listen(void *socket_fd)
 {
-	strcpy(PageContent,"<html><head><title>SERVER</title></head><body BGCOLOR=\"#000000\" \" TEXT=\"#80c0c0\" LINK=\"#ff8080\" VLINK=\"#ff0000\" ALINK=\"#a05050\"><div ALIGN=\"center\"><table BGCOLOR=\"#000080\" BORDER=3 BORDERCOLOR=\"#0000ff\"><tr><td><h1><font FACE=\"courier\" SIZE=6><font SIZE=7>W</font>ELCOME TO Server!</font></h1></td></tr></table></div><br><br><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hi there! This Server is dedicated to multiple clients in one go ..!.</p><table BGCOLOR=\"#000080\"><tr><td WIDTH=50>&nbsp;</td><td><font COLOR=\"#00ff00\">Brought to you by:<font FACE=\"'comic sans ms', fantasy\" COLOR=\"#ffff00\"><u>Anshul Gupta</u> <u>Karmesh Gupta</u> <u>Ashutosh Shukla</u> <u>Anurag Vyas</u></font></td></tr></table><br> <div><b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font SIZE=\6 COLOR=\"#ffffff\">W</font>hen you are done looking through these masterpieces, I encourage you to visit again!</b></div></body></html>");
+	strcpy(PageContent,"<html><head><title>SERVER</title></head><body bgcolor=\"f0f0f0\"><div ALIGN=\"center\"><table BORDER=3 ><tr><td><h1><font FACE=\"courier\" SIZE=6><font SIZE=7>M</font>ulti Threaded Web Server</font></h1></td></tr></table></div><br><center><<br><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This is the homepage created for server</p><table><tr><td WIDTH=50>&nbsp;</td><td><font> Created by:<font FACE=\"'comic sans ms', fantasy\"><u>Anshul Gupta</u> <u>Ashutosh Shukla</u> <u>Karmesh Gupta</u> <u>Anurag Vyas</u></font></td></tr></table><br> <div><b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font SIZE=\6 >Y</font>ou are connected to Multi threaded Web Server</b></div></center><</body></html>");
 
 	tv.tv_sec=119;
 	tv.tv_usec=1000000;
-	bl_counter++;
 	int sock_fd = *((int *)socket_fd);
 	int req_counter=0;
 	int pg_counter=0;
+
+	FILE *slog=fopen("logfile.txt","a+");
+	int lFlag=0;
 
 	if (listen(sock_fd, BACKLOG) == -1) 
 	{
 		perror("ERROR : LISTENING");
 		exit(1);
 	}
-	
+	//to remove Zombie Processes
 	sa.sa_handler = sigchld_handler; 
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
-
+	//sigaction reaps zombie Processes
 	if (sigaction(SIGCHLD, &sa, NULL) == -1) 
 	{
 		perror("ERROR : sigaction");
@@ -132,35 +137,33 @@ void *sock_listen(void *socket_fd)
 	}
 	FD_ZERO(&readfds);	
 	FD_SET(STDIN,&readfds);
-	
+	bl_counter++;
 	if(bl_counter==1)
 		printf("Server: waiting for connections(Press enter key for allowing to connect with client)...\n");
 
 	int rv;
-	/*rv = select(STDIN + 1, &readfds, NULL, NULL, &tv);
-	if (rv == -1) 
+	rv = select(STDIN + 1, &readfds, NULL, NULL, &tv);
+	if (rv == -1)
 	{
 		perror("select"); // error occurred in select()
-	} 
-	else if (rv == 0) 
+	}
+	else if (rv == 0)
 	{
 		printf("Sorry, Server Timed out! No data after 120 seconds.\n");
 		exit(4);
 	}
-	else*/
-	//{	
+	else
+	{
 		pthread_mutex_lock(&listen_lock);
-		while(1) 
-		{ 
+		//while(1) 
+		//{
 			len_sock = sizeof(serv_store);
-			printf("1");
 			acc = accept(sock_fd,(struct sockaddr *)&serv_store,&len_sock);
-			printf("2");
 			
 			if (acc == -1) 
 			{
 				perror("ERROR : accept");
-				break;	
+				//break;	
 			}
 			printf("%d", sock_fd);
 
@@ -170,6 +173,8 @@ void *sock_listen(void *socket_fd)
 
 			//printf("%s\n",HttpHeader);
 			printf("%s\n",ClntRequest);
+			
+			inet_ntop(serv_store.ss_family,get_in_addr((struct sockaddr *)&serv_store),s, sizeof s);
 			//extracting the html request from client's request
 			char ctr[100];
 			req_counter=0;
@@ -194,13 +199,34 @@ void *sock_listen(void *socket_fd)
 			else
 			{
 				printf("This is our server's Home Page.\n");
-				strcpy(PageContent,"<html><head><title>SERVER</title></head><body BGCOLOR=\"#000000\" \" TEXT=\"#80c0c0\" LINK=\"#ff8080\" VLINK=\"#ff0000\" ALINK=\"#a05050\"><div ALIGN=\"center\"><table BGCOLOR=\"#000080\" BORDER=3 BORDERCOLOR=\"#0000ff\"><tr><td><h1><font FACE=\"courier\" SIZE=6><font SIZE=7>W</font>ELCOME TO Server!</font></h1></td></tr></table></div><br><br><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hi there! This Server is dedicated to multiple clients in one go ..!.</p><table BGCOLOR=\"#000080\"><tr><td WIDTH=50>&nbsp;</td><td><font COLOR=\"#00ff00\">Brought to you by:<font FACE=\"'comic sans ms', fantasy\" COLOR=\"#ffff00\"><u>Anshul Gupta</u> <u>Karmesh Gupta</u> <u>Ashutosh Shukla</u> <u>Anurag Vyas</u></font></td></tr></table><br> <div><b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font SIZE=\6 COLOR=\"#ffffff\">W</font>hen you are done looking through these masterpieces, I encourage you to visit again!</b></div></body></html>");
+				strcpy(PageContent,"<html><head><title>SERVER</title></head><body bgcolor=\"f0f0f0\"><div ALIGN=\"center\"><table BORDER=3 ><tr><td><h1><font FACE=\"courier\" SIZE=6><font SIZE=7>M</font>ulti Threaded Web Server</font></h1></td></tr></table>/div><br><center><<br><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This is the homepage created for server</p><table><tr><td WIDTH=50>&nbsp;</td><td><font> Created by:<font FACE=\"'comic sans ms', fantasy\"><u>Anshul Gupta</u> <u>Ashutosh Shukla</u> <u>Karmesh Gupta</u> <u>Anurag Vyas</u></font></td></tr></table><br> <div><b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font SIZE=\6 >Y</font>ou are connected to Multi threaded Web Server</b></div></center><</body></html>");
 			}
 			FILE *fp1=fopen(ctr,"r");
 			char ftr1[100000],ftr[100000]="<html><head><title>ERROR</title></head><body><h1>404</h1><h1> Page Not Found </h1><br><b>The html and txt files present in the server's root directory are :-</b><br><br></body></html>";
 			if(fp1 == NULL && strcmp(ctr,"") != 0)
 			{				
 				strcpy(PageContent,ftr);
+
+				//Log File
+				if(acc != -1 && lFlag != 1)
+				{
+					time_t now;	// getting the time the job has been assigned to the serving thread
+					time(&now);
+			       	        struct tm * ct=localtime(&now); //getting localtime
+			       	        char ch[128], time_serve[128];
+			       	        struct timeval tv;
+			       	        strftime(ch, sizeof ch, "  [%d/%b/%Y : %H:%M:%S %z]", ct); //format of the timestamp string we need
+			       	        snprintf(time_serve, sizeof time_serve, ch, tv.tv_usec); //printing the needed timestamp string
+					char log_c[100]=" > Fetch Error 404 NOT FOUND";
+					//strcat(log_c,time_serve);
+					fputs(s, slog);
+					fputs(time_serve,slog);
+					fputs(log_c, slog);
+					fputc('\n', slog);
+					struct request r;
+					lFlag=1;
+					count++;
+				}
 				//bringing all the html files into foo.txt
 				if(system("./test.sh") == -1)
 				{
@@ -214,18 +240,13 @@ void *sock_listen(void *socket_fd)
 				{
 					c=fgetc(fp);
 					if(c==EOF)
-					{
+					{		
 						break;
 					}
 					f[i]=c;
 					i++;
 				}
 				strcat(PageContent,f);
-				if(system("./test1.sh") == -1)
-				{
-					perror("ERROR: BRINGING FILES");
-				}
-			
 				fclose(fp);
 
 			}
@@ -281,19 +302,26 @@ void *sock_listen(void *socket_fd)
 			sprintf(HttpHeader, HeaderTemplate, GMTNow, strlen(PageContent));
 			printf("\n%s\n",HttpHeader);
 			//Log File
-			time_t now;	// getting the time the job has been assigned to the serving thread
-		        time(&now);
-	       	        struct tm * ct=localtime(&now); //getting localtime
-	       	        char ch[128], time_serve[128];
-	       	        struct timeval tv;
-	       	        strftime(ch, sizeof ch, "[%d/%b/%Y : %H:%M:%S %z]", ct); //format of the timestamp string we need
-	       	        snprintf(time_serve, sizeof time_serve, ch, tv.tv_usec); //printing the needed timestamp string
-
-			struct request r;
-			count++;
-
-			//if(lFlag)
-			//	fprintf(slog,"%s Request Received.", timestamp());
+			if(acc != -1 && lFlag != 1)
+			{
+				time_t now;	// getting the time the job has been assigned to the serving thread
+				time(&now);
+		       	        struct tm * ct=localtime(&now); //getting localtime
+		       	        char ch[128], time_serve[128];
+		       	        struct timeval tv;
+		       	        strftime(ch, sizeof ch, "  [%d/%b/%Y : %H:%M:%S %z]", ct); //format of the timestamp string we need
+		       	        snprintf(time_serve, sizeof time_serve, ch, tv.tv_usec); //printing the needed timestamp string
+				char log_c[100]=" > Connection Success 200 OK";
+				//strcat(log_c,time_serve);
+				fputs(s, slog);
+				fputs(time_serve,slog);
+				fputs(log_c, slog);
+				fputc('\n', slog);
+				lFlag = 1;
+				struct request r;
+				count++;
+			}
+			//fprintf(slog,"%s Request Received.", timestamp());
 	
                		//child process removed
 			
@@ -302,8 +330,7 @@ void *sock_listen(void *socket_fd)
 				perror("write");
 			}
 			int len=strlen(PageContent);
-
-			sleep(2);
+			sleep(1);
 			//calculating exact time server took to send
 			struct timeval stop, start;
 			gettimeofday(&start, NULL);
@@ -314,11 +341,12 @@ void *sock_listen(void *socket_fd)
 			}
 			gettimeofday(&stop, NULL);
 			printf("Server took %lums time to send the data\n", stop.tv_usec - start.tv_usec);
-			sleep(2);
+			fclose(slog);
+			//sleep(1);
 			close(acc);
-		}
+		//}
 		pthread_mutex_unlock(&listen_lock);
-	//}
+	}
 }
 
 
@@ -385,8 +413,8 @@ int main(int argc,char **argv)
 				case 'l':
 					if(((i+1) < argc) && (argv[i+1][0] != '-'))
 					{
-						slog=fopen(argv[i+1], "w");
-						fprintf(slog, "Logfile Created");	
+						slog=fopen(argv[i+1], "a+");
+						fprintf(slog, "Logfile Created\n");
 						lFlag=1;
 					}
 					else
@@ -395,8 +423,9 @@ int main(int argc,char **argv)
 						return 1;
 					}
 					break;
-				case 'v':
-					vFlag = 1;
+				case 'b':
+					if(((i+1) < argc) && (argv[i+1][0] != '-'))
+						BACKLOG=atoi(argv[i+1]);
 					break;
 				default:
 					printf("server.c : option '%s' not recognized.\n",argv[i]);
@@ -413,7 +442,7 @@ int main(int argc,char **argv)
 		perror("ERROR : SOCKET CREATION");
 		continue;
 		}
-		//fcntl(sockfd, F_SETFL, O_NONBLOCK); // to prevent blocking of socket by kernel
+		//fcntl(sockfd, F_SETFL, O_NONBLOCK);
 		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,sizeof(int)) == -1)
 		{
 			perror("setsockopt");
